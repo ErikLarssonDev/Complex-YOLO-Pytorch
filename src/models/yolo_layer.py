@@ -93,8 +93,8 @@ class YoloLayer(nn.Module):
         giou_loss = torch.tensor([0.], device=self.device, dtype=torch.float)
 
         if n_target_boxes > 0:  # Make sure that there is at least 1 box
-            b, target_labels = target[:, :2].long().t()
-            target_boxes = torch.cat((target[:, 2:6] * nG, target[:, 6:8]), dim=-1)  # scale up x, y, w, h
+            b, target_labels = target[:, :2].long().t() # Expects batch_index, target_label_ID
+            target_boxes = torch.cat((target[:, 2:6] * nG, target[:, 6:8]), dim=-1)  # scale up x, y, w, h, and then add im, re to each row
 
             gxy = target_boxes[:, :2]
             gwh = target_boxes[:, 2:4]
@@ -188,7 +188,7 @@ class YoloLayer(nn.Module):
             pred_cls.view(num_samples, -1, self.num_classes),
         ), dim=-1)
         # output size: [num_samples, num boxes, 7 + num_classes]
-
+    
         if targets is None:
             return output, 0
         else:
