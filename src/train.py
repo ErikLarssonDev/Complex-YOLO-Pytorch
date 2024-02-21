@@ -4,6 +4,7 @@ import sys
 import random
 import os
 import warnings
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -135,7 +136,7 @@ def main_worker(gpu_idx, configs):
         print('mAP {}'.format(AP.mean()))
         return
 
-    for epoch in range(configs.start_epoch, configs.num_epochs + 1):
+    for epoch in tqdm(range(configs.start_epoch, configs.num_epochs + 1), desc='Epochs'):
         if logger is not None:
             logger.info('{}'.format('*-' * 40))
             logger.info('{} {}/{} {}'.format('=' * 35, epoch, configs.num_epochs, '=' * 35))
@@ -146,7 +147,18 @@ def main_worker(gpu_idx, configs):
             train_sampler.set_epoch(epoch)
         # train for one epoch
         train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, configs, logger, tb_writer)
-        if not configs.no_val:
+        if not configs.no_val and ((epoch % configs.checkpoint_freq) == 0):
+            print('number of batches in train: {}'.format(len(train_dataloader)))
+            precision, recall, AP, f1, ap_class = evaluate_mAP(train_dataloader, model, configs, logger)
+            train_metrics_dict = {
+                'precision': precision.mean(),
+                'recall': recall.mean(),
+                'AP': AP.mean(),
+                'f1': f1.mean(),
+                'ap_class': ap_class.mean()
+            }
+            print(f"train_metrics_dict: {train_metrics_dict}")
+            logger.info(f"train_metrics_dict: {train_metrics_dict}")
             val_dataloader = create_val_dataloader(configs)
             print('number of batches in val_dataloader: {}'.format(len(val_dataloader)))
             precision, recall, AP, f1, ap_class = evaluate_mAP(val_dataloader, model, configs, logger)
@@ -157,7 +169,10 @@ def main_worker(gpu_idx, configs):
                 'f1': f1.mean(),
                 'ap_class': ap_class.mean()
             }
+            print(f"val_metrics_dict: {val_metrics_dict}")
+            logger.info(f"val_metrics_dict: {val_metrics_dict}")
             if tb_writer is not None:
+                tb_writer.add_scalars('Validation_train', train_metrics_dict, epoch)
                 tb_writer.add_scalars('Validation', val_metrics_dict, epoch)
 
         # Save checkpoint
@@ -196,13 +211,14 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
     for batch_idx, batch_data in enumerate(tqdm(train_dataloader)):
         data_time.update(time.time() - start_time)
         _, imgs, targets = batch_data
+
         global_step = num_iters_per_epoch * (epoch - 1) + batch_idx + 1
 
         batch_size = imgs.size(0)
-
         targets = targets.to(configs.device, non_blocking=True)
         imgs = imgs.to(configs.device, non_blocking=True)
-        total_loss, outputs = model(imgs, targets)
+
+        total_loss, outputs = model(imgs, targets)  # :param targets: [num boxes, 8] (box_idx, class, x, y, w, l, sin(yaw), cos(yaw))
 
         # For torch.nn.DataParallel case
         if (not configs.distributed) and (configs.gpu_idx is None):
