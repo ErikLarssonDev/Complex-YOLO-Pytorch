@@ -171,7 +171,8 @@ class Darknet(nn.Module):
             ind = ind + 1
             # if ind > 0:
             #    return x
-
+            if torch.isnan(x).any():
+                break
             if block['type'] == 'net':
                 continue
             elif block['type'] in ['convolutional', 'maxpool', 'reorg', 'upsample', 'avgpool', 'softmax', 'connected']:
