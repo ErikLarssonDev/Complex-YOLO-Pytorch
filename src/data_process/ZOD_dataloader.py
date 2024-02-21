@@ -64,6 +64,21 @@ def create_test_dataloader(configs):
 
     return test_dataloader
 
+# TODO: Fix so that this depends on the config, move to dataset
+def transform_coordinates(x, y): 
+    # Input range: [-250, 250], center at (0, 0)
+    # Output range: [0, 608], center at (304, 304)
+
+    # Shift the coordinates to have the center at (0, 0)
+    x_centered = x + 250
+    y_centered = y + 250
+
+    # Scale the coordinates to the new range
+    x_transformed = (x_centered / 500) * 608
+    y_transformed = (y_centered / 500) * 608
+
+    return x_transformed, y_transformed
+
 
 if __name__ == '__main__':
     import argparse
@@ -135,18 +150,23 @@ if __name__ == '__main__':
 
     for batch_i, (imgs, targets) in enumerate(dataloader):
         # Rescale target
-        print(targets[1, :])
-        targets[:, 0:6] *= configs.img_size
-        print(targets[1, :])
+        # We go from coord x, y in [-250, 250] and center is (0,0) --> x, y in [0, 608] and center is (304, 304)
+        print(f"before: {targets[0, :]}")
+        targets[:, 0:3] = ((targets[:, 0:3] + 250) / 500) * configs.img_size # Need to convert from 
+        targets[:, 3:6] = ((targets[:, 3:6])) * configs.img_size # Need to convert from 
+        print(f"after: {targets[0, :]}")
+        # targets[:, 3:6] *= configs.img_size
+
+        # print(targets[0, :])
         print(imgs.shape)
         img_bev = imgs.squeeze() * 255
         img_bev = img_bev.permute(2, 1, 0).numpy().astype(np.uint8)
         img_bev = cv2.resize(img_bev, (configs.img_size, configs.img_size))
-        for x, y, z, w, l, h, yaw, c in targets[:, 0:8].numpy():
+        for x, y, z, l, w, h, yaw, c in targets[:, 0:8].numpy():
             # Draw rotated box
             bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(c)])
 
-        img_bev = cv2.rotate(img_bev, cv2.ROTATE_180)
+        # img_bev = cv2.rotate(img_bev, cv2.ROTATE_180)
         print(img_bev.shape)
 
         if configs.mosaic and configs.show_train_data:
@@ -168,8 +188,8 @@ if __name__ == '__main__':
                 if show_next_image:
                     key = cv2.waitKey(0) & 0xFF  # Ensure the result is an 8-bit integer
                     if key == 27:  # Check if 'Esc' key is pressed
-                    # break
-                        print(f"\nShowing image {batch_i}\n")
+                        cv2.destroyAllWindows() 
+                        break
                     elif key == 110:
                         print(f"\nShowing image {batch_i}\n")
                         show_next_image = True  # Set the flag to False to avoid showing the same image again
