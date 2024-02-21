@@ -47,8 +47,6 @@ class ZOD(Dataset):
         self.mosaic_border = [-self.img_size // 2, -self.img_size // 2]
 
         self.lidar_dir = os.path.join(self.dataset_dir, "points")
-        # self.image_dir = os.path.join(self.dataset_dir, sub_folder, "image_2")
-        # self.calib_dir = os.path.join(self.dataset_dir, sub_folder, "calib")
         self.label_dir = os.path.join(self.dataset_dir, "labels")
         split_txt_path = os.path.join(self.dataset_dir, 'ImageSets', '{}.txt'.format(mode))
         self.image_idx_list = [x.strip() for x in open(split_txt_path).readlines()]
@@ -71,7 +69,7 @@ class ZOD(Dataset):
 
                 return rgb_map, targets
             else:
-                print(f"load bev {self.load_BEV_with_targets(index)[1][0]}")
+                # print(f"load bev {self.load_BEV_with_targets(index)[1][0]}")
                 return self.load_BEV_with_targets(index)
 
     def load_BEV_only(self, index):
@@ -79,27 +77,9 @@ class ZOD(Dataset):
         sample_id = int(self.sample_id_list[index])
         lidarData = self.get_lidar(sample_id)
         b = kitti_bev_utils.removePoints(lidarData, cnf.boundary)
-        rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION, cnf.boundary)
+        rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION_X, cnf.DISCRETIZATION_Y, cnf.boundary)
         
         return rgb_map
-
-    def build_yolo_target(self, labels):
-        bc = cnf.boundary
-        target = []
-        for i in range(labels.shape[0]):
-            x, y, z, h, w, l, yaw, cl = labels[i]
-            # ped and cyc labels are very small, so lets add some factor to height/width
-            l = l + 0.3
-            w = w + 0.3
-            yaw = np.pi * 2 - yaw
-            if (bc["minX"] < x < bc["maxX"]) and (bc["minY"] < y < bc["maxY"]):
-                y1 = (y - bc["minY"]) / (bc["maxY"] - bc["minY"])  # we should put this in [0,1], so divide max_size  80 m
-                x1 = (x - bc["minX"]) / (bc["maxX"] - bc["minX"])  # we should put this in [0,1], so divide max_size  40 m
-                w1 = w / (bc["maxY"] - bc["minY"])
-                l1 = l / (bc["maxX"] - bc["minX"])
-                target.append([cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))])
-
-        return np.array(target, dtype=np.float32)
 
     def load_BEV_with_targets(self, index):
         """Load BEV images and targets for the training and validation phase"""
@@ -113,10 +93,10 @@ class ZOD(Dataset):
 
         if self.lidar_transforms is not None:
             lidarData, labels[:, :7] = self.lidar_transforms(lidarData, labels[:, :7])
-
+        b = lidarData
         b = kitti_bev_utils.removePoints(lidarData, cnf.boundary)
-        rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION, cnf.boundary)
-        target = self.build_yolo_target(labels)
+        rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION_X, cnf.DISCRETIZATION_Y, cnf.boundary)
+        target = kitti_bev_utils.build_yolo_target(labels)
 
         # on image space: targets are formatted as (box_idx, class, x, y, w, l, im, re)
         n_target = len(target)
@@ -189,18 +169,18 @@ class ZOD(Dataset):
             sample_id = int(sample_id)
             objects = np.array(self.get_label(sample_id))
             labels = np.array(objects, dtype=np.float32)
-            print(f"sample_id: {sample_id}")
+            # print(f"sample_id: {sample_id}")
             valid_list = []
             for i in range(labels.shape[0]):
                 if int(labels[i, 7]) in cnf.CLASS_NAME_TO_ID.values():
-                    print("PASS 1")
-                    print(labels[i, 0:3])
-                    if self.check_point_cloud_range(labels[i, 0:3]):
-                        print("PASS 2")
+                    # print("PASS 1")
+                    # print(labels[i, 0:3])
+                    if self.check_point_cloud_range(labels[i, 1:4]):
+                        # print("PASS 2")
                         valid_list.append(labels[i, 0])
 
             if len(valid_list) > 0:
-                print("KEEP")
+                # print("KEEP")
                 sample_id_list.append(sample_id)
         print(f"All samples: {len(image_idx_list)}")
         print(f"OK samples: {len(sample_id_list)}")
@@ -215,7 +195,7 @@ class ZOD(Dataset):
         x_range = [cnf.boundary["minX"], cnf.boundary["maxX"]]
         y_range = [cnf.boundary["minY"], cnf.boundary["maxY"]]
         z_range = [cnf.boundary["minZ"], cnf.boundary["maxZ"]]
-        print(xyz[0])
+        # print(xyz[0])
         if (x_range[0] <= xyz[0] <= x_range[1]) and (y_range[0] <= xyz[1] <= y_range[1]) and \
                 (z_range[0] <= xyz[2] <= z_range[1]):
             return True
@@ -261,5 +241,5 @@ class ZOD(Dataset):
         lines = [line.rstrip() for line in open(label_file)]
         labels = [label_file_line.split(' ') for label_file_line in lines]
         objects = [[*label[:7], cnf.CLASS_NAME_TO_ID[str(label[7])], *label[8:]] for label in labels]
-        return objects
+        return objects # returns x, y, z, l, w, h, yaw, c (as id)
         # return kitti_data_utils.read_label(label_file)
