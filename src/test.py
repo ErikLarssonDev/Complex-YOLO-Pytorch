@@ -78,7 +78,7 @@ def parse_test_configs():
     ##############Dataset, Checkpoints, and results dir configs#########
     ####################################################################
     configs.working_dir = '../'
-    configs.dataset_dir = os.path.join(configs.working_dir, 'dataset', 'kitti')
+    configs.dataset_dir = os.path.join(configs.working_dir, 'KITTI')
 
     if configs.save_test_output:
         configs.results_dir = os.path.join(configs.working_dir, 'results', configs.saved_fn)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     test_dataloader = create_test_dataloader(configs)
     with torch.no_grad():
-        for batch_idx, (img_paths, imgs_bev) in enumerate(test_dataloader):
+        for batch_idx, (_, imgs_bev, targets) in enumerate(test_dataloader):
             input_imgs = imgs_bev.to(device=configs.device).float()
             t1 = time_synchronized()
             outputs = model(input_imgs)
