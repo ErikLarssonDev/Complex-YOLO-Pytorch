@@ -81,25 +81,26 @@ cd src/data_process
 show the images in a bigger/smaller window)**_:
 
 ```shell script
-python kitti_dataloader.py --output-width 608
+python3 kitti_dataloader.py --output-width 608 # Semms to work quite well
+python3 ZOD_dataloader.py --output-width 608
 ```
 
 - To visualize mosaics that are composed from 4 BEV maps (Using during training only), let's execute:
 
 ```shell script
-python kitti_dataloader.py --show-train-data --mosaic --output-width 608 
+python3 kitti_dataloader.py --show-train-data --mosaic --output-width 608 
 ```
 
 By default, there is _**no padding**_ for the output mosaics, the feature could be activated by executing:
 
 ```shell script
-python kitti_dataloader.py --show-train-data --mosaic --random-padding --output-width 608 
+python3 kitti_dataloader.py --show-train-data --mosaic --random-padding --output-width 608 
 ```
 
 - To visualize cutout augmentation, let's execute:
 
 ```shell script
-python kitti_dataloader.py --show-train-data --cutout_prob 1. --cutout_nholes 1 --cutout_fill_value 1. --cutout_ratio 0.3 --output-width 608
+python3 kitti_dataloader.py --show-train-data --cutout_prob 1. --cutout_nholes 1 --cutout_fill_value 1. --cutout_ratio 0.3 --output-width 608
 ```
 
 #### 2.4.2. Inference
@@ -108,13 +109,13 @@ Download the trained model from [**_here_**](https://drive.google.com/drive/fold
 then put it to `${ROOT}/checkpoints/` and execute:
 
 ```shell script
-python test.py --gpu_idx 0 --pretrained_path ../checkpoints/complex_yolov4/complex_yolov4_mse_loss.pth --cfgfile ./config/cfg/complex_yolov4.cfg --show_image
+python3 test.py --gpu_idx 0 --pretrained_path ../checkpoints/complexer_yolo/Model_complexer_yolo_epoch_770.pth --cfgfile ./config/cfg/complex_yolov4.cfg --show_image
 ```
 
 #### 2.4.3. Evaluation
 
 ```shell script
-python evaluate.py --gpu_idx 0 --pretrained_path <PATH> --cfgfile <CFG> --img_size <SIZE> --conf-thresh <THRESH> --nms-thresh <THRESH> --iou-thresh <THRESH>
+python3 evaluate.py --gpu_idx 0 --pretrained_path ../checkpoints/complexer_yolo/Model_complexer_yolo_epoch_770.pth --cfgfile ./config/cfg/complex_yolov4.cfg --img_size 608 --conf-thresh 0.5 --nms-thresh 0.5 --iou-thresh 0.5
 ```
 (The `conf-thresh`, `nms-thresh`, and `iou-thresh` params can be adjusted. By default, these params have been set to _**0.5**_)
 
@@ -123,7 +124,7 @@ python evaluate.py --gpu_idx 0 --pretrained_path <PATH> --cfgfile <CFG> --img_si
 ##### 2.4.4.1. Single machine, single gpu
 
 ```shell script
-python train.py --gpu_idx 0 --batch_size <N> --num_workers <N>...
+python3 train.py --gpu_idx 0 --batch_size 1 --num_workers 4 --saved_fn complexer_yolo_kitti_300e
 ```
 
 ##### 2.4.4.2. Multi-processing Distributed Data Parallel Training
@@ -133,7 +134,7 @@ distributed training performance.
 - **Single machine (node), multiple GPUs**
 
 ```shell script
-python train.py --dist-url 'tcp://127.0.0.1:29500' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0
+python3 train.py --dist-url 'tcp://127.0.0.1:29500' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0
 ```
 
 - **Two machines (two nodes), multiple GPUs**
@@ -141,12 +142,12 @@ python train.py --dist-url 'tcp://127.0.0.1:29500' --dist-backend 'nccl' --multi
 _**First machine**_
 
 ```shell script
-python train.py --dist-url 'tcp://IP_OF_NODE1:FREEPORT' --dist-backend 'nccl' --multiprocessing-distributed --world-size 2 --rank 0
+python3 train.py --dist-url 'tcp://IP_OF_NODE1:FREEPORT' --dist-backend 'nccl' --multiprocessing-distributed --world-size 2 --rank 0
 ```
 _**Second machine**_
 
 ```shell script
-python train.py --dist-url 'tcp://IP_OF_NODE2:FREEPORT' --dist-backend 'nccl' --multiprocessing-distributed --world-size 2 --rank 1
+python3 train.py --dist-url 'tcp://IP_OF_NODE2:FREEPORT' --dist-backend 'nccl' --multiprocessing-distributed --world-size 2 --rank 1
 ```
 
 To reproduce the results, you can run the bash shell script
