@@ -105,7 +105,7 @@ def parse_eval_configs():
     ##############Dataset, Checkpoints, and results dir configs#########
     ####################################################################
     configs.working_dir = '../'
-    configs.dataset_dir = os.path.join(configs.working_dir, 'dataset', 'kitti')
+    configs.dataset_dir = os.path.join(configs.working_dir, 'KITTI')
 
     return configs
 

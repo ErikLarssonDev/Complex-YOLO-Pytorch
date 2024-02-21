@@ -9,7 +9,7 @@ import os
 from sklearn.model_selection import train_test_split
 
 if __name__ == '__main__':
-    dataset_dir = '../../dataset/kitti'
+    dataset_dir = '../../KITTI'
     train_file = open(os.path.join(dataset_dir, 'train.txt'), 'w')
     val_file = open(os.path.join(dataset_dir, 'val.txt'), 'w')
     file_ids = ["%06d\n" % i for i in range(0, 7481)]
