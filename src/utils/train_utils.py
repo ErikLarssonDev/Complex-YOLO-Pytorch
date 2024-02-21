@@ -98,6 +98,15 @@ def save_checkpoint(checkpoints_dir, saved_fn, model_state_dict, utils_state_dic
     model_save_path = os.path.join(checkpoints_dir, 'Model_{}_epoch_{}.pth'.format(saved_fn, epoch))
     utils_save_path = os.path.join(checkpoints_dir, 'Utils_{}_epoch_{}.pth'.format(saved_fn, epoch))
 
+    # Delete the saved checkpoint files, otherwise they will accumulate and fill up the storage
+    if epoch > 1:
+        model_delete_path = os.path.join(checkpoints_dir, 'Model_{}_epoch_{}.pth'.format(saved_fn, epoch-1)) # Only saving the last epoch for now
+        utils_delete_path = os.path.join(checkpoints_dir, 'Utils_{}_epoch_{}.pth'.format(saved_fn, epoch-1)) # Only saving the last epoch for now
+        if os.path.exists(model_delete_path):
+            os.remove(model_delete_path)
+        if os.path.exists(utils_delete_path):
+            os.remove(utils_delete_path)
+
     torch.save(model_state_dict, model_save_path)
     torch.save(utils_state_dict, utils_save_path)
 

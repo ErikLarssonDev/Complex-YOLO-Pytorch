@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 sys.path.append('./')
 
-from data_process.kitti_dataloader import create_train_dataloader, create_val_dataloader
+from data_process.ZOD_dataloader import create_train_dataloader, create_val_dataloader
 from models.model_utils import create_model, make_data_parallel, get_num_parameters
 from utils.train_utils import create_optimizer, create_lr_scheduler, get_saved_state, save_checkpoint
 from utils.train_utils import reduce_tensor, to_python_float, get_tensorboard_log
@@ -147,7 +147,7 @@ def main_worker(gpu_idx, configs):
             train_sampler.set_epoch(epoch)
         # train for one epoch
         train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, configs, logger, tb_writer)
-        if not configs.no_val and ((epoch % configs.checkpoint_freq) == 0):
+        if not configs.no_val and ((epoch % 10) == 0) and epoch >= configs.burn_in:
             print('number of batches in train: {}'.format(len(train_dataloader)))
             precision, recall, AP, f1, ap_class = evaluate_mAP(train_dataloader, model, configs, logger)
             train_metrics_dict = {
@@ -157,7 +157,6 @@ def main_worker(gpu_idx, configs):
                 'f1': f1.mean(),
                 'ap_class': ap_class.mean()
             }
-            print(f"train_metrics_dict: {train_metrics_dict}")
             logger.info(f"train_metrics_dict: {train_metrics_dict}")
             val_dataloader = create_val_dataloader(configs)
             print('number of batches in val_dataloader: {}'.format(len(val_dataloader)))
@@ -169,7 +168,6 @@ def main_worker(gpu_idx, configs):
                 'f1': f1.mean(),
                 'ap_class': ap_class.mean()
             }
-            print(f"val_metrics_dict: {val_metrics_dict}")
             logger.info(f"val_metrics_dict: {val_metrics_dict}")
             if tb_writer is not None:
                 tb_writer.add_scalars('Validation_train', train_metrics_dict, epoch)
@@ -208,7 +206,7 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
     # switch to train mode
     model.train()
     start_time = time.time()
-    for batch_idx, batch_data in enumerate(tqdm(train_dataloader)):
+    for batch_idx, batch_data in enumerate(train_dataloader): # enumerate(tqdm(train_dataloader)): # Removed tqdm when running on minizod
         data_time.update(time.time() - start_time)
         _, imgs, targets = batch_data
 

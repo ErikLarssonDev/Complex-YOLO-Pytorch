@@ -153,8 +153,10 @@ def get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold):
     """ Compute true positives, predicted scores and predicted labels per sample """
     batch_metrics = []
     for sample_i in range(len(outputs)):
-
+        
         if outputs[sample_i] is None:
+            print("OUTPUTS IS NONE!")
+            batch_metrics = [None, None, None]
             continue
 
         output = outputs[sample_i]
@@ -341,6 +343,8 @@ def post_processing_v2(prediction, conf_thresh=0.95, nms_thresh=0.4):
         # Perform non-maximum suppression
         keep_boxes = []
         while detections.size(0):
+            # TODO: This step can take quite some time, check if we can avoid that
+            # print(f"nms: {detections.size()}")
             # large_overlap = rotated_bbox_iou(detections[0, :6].unsqueeze(0), detections[:, :6], 1.0, False) > nms_thres # not working
             large_overlap = iou_rotated_single_vs_multi_boxes_cpu(detections[0, :6], detections[:, :6]) > nms_thresh
             label_match = detections[0, -1] == detections[:, -1]

@@ -69,7 +69,6 @@ class ZOD(Dataset):
 
                 return rgb_map, targets
             else:
-                # print(f"load bev {self.load_BEV_with_targets(index)[1][0]}")
                 return self.load_BEV_with_targets(index)
 
     def load_BEV_only(self, index):
@@ -79,7 +78,7 @@ class ZOD(Dataset):
         b = kitti_bev_utils.removePoints(lidarData, cnf.boundary)
         rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION_X, cnf.DISCRETIZATION_Y, cnf.boundary)
         
-        return rgb_map
+        return None, rgb_map
 
     def load_BEV_with_targets(self, index):
         """Load BEV images and targets for the training and validation phase"""
@@ -87,29 +86,30 @@ class ZOD(Dataset):
         sample_id = int(self.sample_id_list[index])
 
         lidarData = self.get_lidar(sample_id)
-        objects = self.get_label(sample_id)
+        objects = self.get_label(sample_id) # returns x, y, z, l, w, h, yaw, c (as id)
         labels = np.array(objects, dtype=np.float32)
         # labels, noObjectLabels = kitti_bev_utils.read_labels_for_bevbox(objects)
 
+        # TODO: Check what needs to be done for transforms need to be applied
         if self.lidar_transforms is not None:
             lidarData, labels[:, :7] = self.lidar_transforms(lidarData, labels[:, :7])
         b = lidarData
         b = kitti_bev_utils.removePoints(lidarData, cnf.boundary)
         rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION_X, cnf.DISCRETIZATION_Y, cnf.boundary)
-        target = kitti_bev_utils.build_yolo_target(labels)
-
+        target = kitti_bev_utils.build_yolo_target_ZOD(labels) # [cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))]
+        # target = labels
         # on image space: targets are formatted as (box_idx, class, x, y, w, l, im, re)
         n_target = len(target)
         targets = torch.zeros((n_target, 8))
         if n_target > 0:
-            targets[:, :7] = torch.from_numpy(target)
+            targets = torch.from_numpy(target)
 
         rgb_map = torch.from_numpy(rgb_map).float()
 
         if self.aug_transforms is not None:
             rgb_map, targets = self.aug_transforms(rgb_map, targets)
 
-        return rgb_map, targets
+        return None, rgb_map, targets
 
     def load_BEV_mosaic(self, index):
         targets_s4 = []
@@ -155,7 +155,7 @@ class ZOD(Dataset):
             targets_s4 = torch.cat(targets_s4, 0)
             torch.clamp(targets_s4[:, 2:4], min=0., max=(1. - 0.5 / self.img_size), out=targets_s4[:, 2:4])
 
-        return img_s4, targets_s4
+        return None, img_s4, targets_s4
 
 
     def __len__(self):
@@ -169,18 +169,13 @@ class ZOD(Dataset):
             sample_id = int(sample_id)
             objects = np.array(self.get_label(sample_id))
             labels = np.array(objects, dtype=np.float32)
-            # print(f"sample_id: {sample_id}")
             valid_list = []
             for i in range(labels.shape[0]):
                 if int(labels[i, 7]) in cnf.CLASS_NAME_TO_ID.values():
-                    # print("PASS 1")
-                    # print(labels[i, 0:3])
                     if self.check_point_cloud_range(labels[i, 1:4]):
-                        # print("PASS 2")
                         valid_list.append(labels[i, 0])
 
             if len(valid_list) > 0:
-                # print("KEEP")
                 sample_id_list.append(sample_id)
         print(f"All samples: {len(image_idx_list)}")
         print(f"OK samples: {len(sample_id_list)}")
@@ -195,14 +190,13 @@ class ZOD(Dataset):
         x_range = [cnf.boundary["minX"], cnf.boundary["maxX"]]
         y_range = [cnf.boundary["minY"], cnf.boundary["maxY"]]
         z_range = [cnf.boundary["minZ"], cnf.boundary["maxZ"]]
-        # print(xyz[0])
         if (x_range[0] <= xyz[0] <= x_range[1]) and (y_range[0] <= xyz[1] <= y_range[1]) and \
                 (z_range[0] <= xyz[2] <= z_range[1]):
             return True
         return False
 
     def collate_fn(self, batch):
-        imgs, targets = list(zip(*batch))
+        _, imgs, targets = list(zip(*batch))
         # Remove empty placeholder targets
         targets = [boxes for boxes in targets if boxes is not None]
         # Add sample index to targets
@@ -218,7 +212,7 @@ class ZOD(Dataset):
             imgs = F.interpolate(imgs, size=self.img_size, mode="bilinear", align_corners=True)
         self.batch_count += 1
 
-        return imgs, targets
+        return None, imgs, targets
 
     def get_image(self, idx):
         img_file = os.path.join(self.image_dir, '{:06d}.png'.format(idx))

@@ -14,7 +14,7 @@ from easydict import EasyDict as edict
 
 sys.path.append('./')
 
-from data_process.kitti_dataloader import create_val_dataloader
+from data_process.ZOD_dataloader import create_val_dataloader
 from models.model_utils import create_model
 from utils.misc import AverageMeter, ProgressMeter
 from utils.evaluation_utils import post_processing, get_batch_statistics_rotated_bbox, ap_per_class, load_classes, post_processing_v2
@@ -41,11 +41,11 @@ def evaluate_mAP(val_loader, model, configs, logger):
             targets[:, 2:6] *= configs.img_size
             imgs = imgs.to(configs.device, non_blocking=True)
 
+            # TODO: Explore why outputs is None sometimes
             outputs = model(imgs)
             outputs = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
 
             sample_metrics += get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold=configs.iou_thresh)
-
             # measure elapsed time
             # torch.cuda.synchronize()
             batch_time.update(time.time() - start_time)
@@ -58,15 +58,17 @@ def evaluate_mAP(val_loader, model, configs, logger):
             start_time = time.time()
 
         # Concatenate sample statistics
-        true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
-        precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
-
-    return precision, recall, AP, f1, ap_class
+        if sample_metrics[0] is not None:
+            true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
+            precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
+            return precision, recall, AP, f1, ap_class
+        
+        return np.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, 2, 3, 4]])
 
 
 def parse_eval_configs():
     parser = argparse.ArgumentParser(description='Demonstration config for Complex YOLO Implementation')
-    parser.add_argument('--classnames-infor-path', type=str, default='../dataset/kitti/classes_names.txt',
+    parser.add_argument('--classnames-infor-path', type=str, default='../dataset/minzod_mmdet3d/classes_names.txt',
                         metavar='PATH', help='The class names of objects in the task')
     parser.add_argument('-a', '--arch', type=str, default='darknet', metavar='ARCH',
                         help='The name of the model architecture')
@@ -88,8 +90,8 @@ def parse_eval_configs():
                         help='Take a subset of the dataset to run and debug')
     parser.add_argument('--num_workers', type=int, default=4,
                         help='Number of threads for loading data')
-    parser.add_argument('--batch_size', type=int, default=4,
-                        help='mini-batch size (default: 4)')
+    parser.add_argument('--batch_size', type=int, default=1,
+                        help='mini-batch size (default: 1)')
 
     parser.add_argument('--conf-thresh', type=float, default=0.5,
                         help='for evaluation - the threshold for class conf')
@@ -105,7 +107,7 @@ def parse_eval_configs():
     ##############Dataset, Checkpoints, and results dir configs#########
     ####################################################################
     configs.working_dir = '../'
-    configs.dataset_dir = os.path.join(configs.working_dir, 'KITTI')
+    configs.dataset_dir = os.path.join(configs.working_dir, 'minzod_mmdet3d')
 
     return configs
 
@@ -113,7 +115,7 @@ def parse_eval_configs():
 if __name__ == '__main__':
     configs = parse_eval_configs()
     configs.distributed = False  # For evaluation
-    class_names = load_classes(configs.classnames_infor_path)
+    class_names = load_classes(os.path.join(configs.dataset_dir, 'classes_names.txt'))
 
     model = create_model(configs)
     # model.print_network()

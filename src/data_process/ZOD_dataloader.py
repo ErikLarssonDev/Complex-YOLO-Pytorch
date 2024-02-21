@@ -91,7 +91,7 @@ if __name__ == '__main__':
     import data_process.kitti_bev_utils as bev_utils
     from data_process import kitti_data_utils
     from utils.visualization_utils import show_image_with_boxes, merge_rgb_to_bev, invert_target
-    import config.kitti_config as cnf
+    import config.ZOD_config as cnf
 
     parser = argparse.ArgumentParser(description='Complexer YOLO Implementation')
 
@@ -148,26 +148,31 @@ if __name__ == '__main__':
     print(configs)
     print('\n\nPress n to see the next sample >>> Press Esc to quit...')
 
-    for batch_i, (imgs, targets) in enumerate(dataloader):
+    for batch_i, (_, imgs, targets) in enumerate(dataloader):
         # Rescale target
         # We go from coord x, y in [-250, 250] and center is (0,0) --> x, y in [0, 608] and center is (304, 304)
-        print(f"before: {targets[0, :]}")
-        targets[:, 0:3] = ((targets[:, 0:3] + 250) / 500) * configs.img_size # Need to convert from 
-        targets[:, 3:6] = ((targets[:, 3:6])) * configs.img_size # Need to convert from 
-        print(f"after: {targets[0, :]}")
-        # targets[:, 3:6] *= configs.img_size
+        # print(f"before: {targets[0, :]}")
+        # targets[:, 2:6] *= configs.img_size / 500 # Need to convert from 
+        # targets[:, 2:4] = ((targets[:, 2:4] + 304)) # Re-center 
+        # # targets[:, 3:4] = ((targets[:, 3:4] + 250) / 500) # Need to convert from
 
-        # print(targets[0, :])
-        print(imgs.shape)
+        # targets[:, 3] = 608 - targets[:, 3]
+        # print(f"after: {targets[0, :]}")
+        targets[:, 2:6] *= configs.img_size
+
+        # Get yaw angle
+        targets[:, 6] = torch.atan2(targets[:, 6], targets[:, 7])
+
         img_bev = imgs.squeeze() * 255
-        img_bev = img_bev.permute(2, 1, 0).numpy().astype(np.uint8)
+        img_bev = img_bev.permute(1, 2, 0).numpy().astype(np.uint8)
         img_bev = cv2.resize(img_bev, (configs.img_size, configs.img_size))
-        for x, y, z, l, w, h, yaw, c in targets[:, 0:8].numpy():
+        # print(f"targets: {targets[0, :]}")
+        for c, x, y, w, l, yaw in targets[:, 1:7].numpy(): # targets = [cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))]
             # Draw rotated box
             bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(c)])
 
-        # img_bev = cv2.rotate(img_bev, cv2.ROTATE_180)
-        print(img_bev.shape)
+        img_bev = cv2.rotate(img_bev, cv2.ROTATE_180)
+        # print(img_bev.shape)
 
         if configs.mosaic and configs.show_train_data:
             if configs.save_img:

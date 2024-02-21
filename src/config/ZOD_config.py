@@ -46,4 +46,4 @@ BEV_HEIGHT = 608 # 608  # across x axis 0m ~ 50m
 DISCRETIZATION_X = (boundary["maxX"] - boundary["minX"]) / BEV_HEIGHT 
 DISCRETIZATION_Y = (boundary["maxY"] - boundary["minY"]) / BEV_WIDTH 
 
-colors = [[0, 255, 255], [0, 0, 255], [255, 0, 0]]
+colors = [[0, 255, 255], [0, 0, 255], [255, 0, 0], [0, 255, 0], [255, 255, 255]]
