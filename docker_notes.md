@@ -56,7 +56,7 @@ docker build -t yolo-image .
 then create a container with the built image, like
 
 ```shell
-docker run -it   --gpus 'all'   -v "${PWD}:/workspace"   -v "/media/student/Passport:/workspace/dataset"   -v "/home/student/minzod_mmdet3d:/workspace/minzod_mmdet3d"   --name "yolo-container" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"  yolo-image
+docker run -it   --gpus 'all'   -v "${PWD}:/workspace"   -v "/media/dataSsd/KITTI:/workspace/KITTI"   -v "/home/student/minzod_mmdet3d:/workspace/minzod_mmdet3d" -v "/media/dataSsd/zod:/workspace/zod"   --name "yolo-container-2" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"  yolo-image
 ```
 
 it might be important to add "X11Forwarding yes" to your ssh_config (found in etc/)
@@ -64,6 +64,9 @@ also make sure to run ´sudo xhost +´ on the host machine and that the $DISPLAY
 
 when container is build run 
 ```shell
+apt-get update -y
+apt-get install libglib2.0-0 8 49
+apt-get install libsm6 libxrender1 libfontconfig1
 pip install --no-cache-dir -r requirements.txt
 ```
 
