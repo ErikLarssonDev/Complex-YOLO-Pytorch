@@ -8,7 +8,7 @@ import cv2
 sys.path.append('../')
 
 from data_process import kitti_data_utils, kitti_bev_utils, transformation
-import config.kitti_config as cnf
+import config.config as cnf
 
 
 def draw_lidar_simple(pc, color=None):

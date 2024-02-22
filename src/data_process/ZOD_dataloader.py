@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
         img_bev = imgs.squeeze() * 255
         img_bev = img_bev.permute(1, 2, 0).numpy().astype(np.uint8)
-        img_bev = cv2.resize(img_bev, (configs.img_size, configs.img_size))
+        img_bev = cv2.resize(img_bev, (configs.img_size, configs.img_size)) # TODO: Whe should resize but keep the aspect ratio
         for c, x, y, w, l, yaw in targets[:, 1:7].numpy(): # targets = [cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))]
             # Draw rotated box
             bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(c)])

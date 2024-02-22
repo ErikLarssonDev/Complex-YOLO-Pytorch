@@ -12,7 +12,7 @@ import torch
 
 sys.path.append('../')
 
-from config import kitti_config as cnf
+from config import config as cnf
 
 
 def angle_in_limit(angle):

@@ -7,7 +7,7 @@ from shapely.geometry import Polygon
 sys.path.append('../')
 
 from data_process import transformation, kitti_bev_utils, kitti_data_utils
-import config.kitti_config as cnf
+import config.config as cnf
 
 
 class Find_Anchors():

@@ -148,7 +148,7 @@ if __name__ == '__main__':
         #     calib = kitti_data_utils.Calibration(img_file.replace(".png", ".txt").replace("image_2", "calib"))
         #     objects_pred = invert_target(targets[:, 1:], calib, img_rgb.shape, RGB_Map=None)
         #     img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False)
-       
+        
         # Rescale target
         targets[:, 2:6] *= configs.img_size
         # Get yaw angle

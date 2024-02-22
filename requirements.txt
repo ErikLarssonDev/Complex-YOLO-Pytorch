@@ -10,4 +10,4 @@ mayavi
 tqdm
 protobuf==3.20.0
 shapely
-numba
+numba==0.53.0

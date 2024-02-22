@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 sys.path.append('./')
 
-from data_process.ZOD_dataloader import create_train_dataloader, create_val_dataloader
+from data_process.kitti_dataloader import create_train_dataloader, create_val_dataloader
 from models.model_utils import create_model, make_data_parallel, get_num_parameters
 from utils.train_utils import create_optimizer, create_lr_scheduler, get_saved_state, save_checkpoint
 from utils.train_utils import reduce_tensor, to_python_float, get_tensorboard_log
@@ -217,6 +217,7 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
         targets = targets.to(configs.device, non_blocking=True)
         imgs = imgs.to(configs.device, non_blocking=True)
 
+        # TODO: Sometimes total_loss in nan for KITTI dataset, check why?
         total_loss, outputs = model(imgs, targets)  # :param targets: [num boxes, 8] (box_idx, class, x, y, w, l, sin(yaw), cos(yaw))
 
         # For torch.nn.DataParallel case
