@@ -115,7 +115,7 @@ python3 test.py --gpu_idx 0 --pretrained_path ../checkpoints/complexer_yolo/Mode
 #### 2.4.3. Evaluation
 
 ```shell script
-python3 evaluate.py --gpu_idx 0 --pretrained_path ../checkpoints/complexer_yolo_zod_3000e/Model_complexer_yolo_zod_3000e_epoch_59.pth --cfgfile ./config/cfg/complex_yolov4.cfg --img_size 608 --conf-thresh 0.5 --nms-thresh 0.5 --iou-thresh 0.5
+python3 evaluate.py --gpu_idx 0 --pretrained_path ../checkpoints/complexer_yolo_zod_10000e/Model_complexer_yolo_zod_10000e_epoch_79.pth --cfgfile ./config/cfg/complex_yolov4.cfg --img_size 608 --conf-thresh 0.5 --nms-thresh 0.5 --iou-thresh 0.5
 ```
 (The `conf-thresh`, `nms-thresh`, and `iou-thresh` params can be adjusted. By default, these params have been set to _**0.5**_)
 

@@ -36,16 +36,18 @@ def evaluate_mAP(val_loader, model, configs, logger):
             data_time.update(time.time() - start_time)
             _, imgs, targets = batch_data
             # Extract labels
+            print(targets[0, :])
             labels += targets[:, 1].tolist()
             # Rescale x, y, w, h of targets ((box_idx, class, x, y, w, l, im, re))
             targets[:, 2:6] *= configs.img_size
             imgs = imgs.to(configs.device, non_blocking=True)
 
-            # TODO: Explore why outputs is None sometimes
             outputs = model(imgs)
+
             outputs = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
 
             sample_metrics += get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold=configs.iou_thresh)
+            print(f"samples_metrics: {sample_metrics}")
             # measure elapsed time
             # torch.cuda.synchronize()
             batch_time.update(time.time() - start_time)
@@ -58,13 +60,16 @@ def evaluate_mAP(val_loader, model, configs, logger):
             start_time = time.time()
 
         # Concatenate sample statistics
-        if sample_metrics[0] is not None:
-            true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
-            precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
-            return precision, recall, AP, f1, ap_class
+        if len(sample_metrics) == 0:
+            print("ERROR: sample_metrics is empty")
+            print(f"sample_metrics: {sample_metrics}")
+            return 0, 0, 0, 0, 0
+        true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
+        precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
+        print(f"precision: {precision}, recall: {recall}, AP: {AP}, f1: {f1}, ap_class: {ap_class}")
+        return precision, recall, AP, f1, ap_class
         
-        return np.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, 2, 3, 4]])
-
+        
 
 def parse_eval_configs():
     parser = argparse.ArgumentParser(description='Demonstration config for Complex YOLO Implementation')

@@ -155,8 +155,7 @@ def get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold):
     for sample_i in range(len(outputs)):
         
         if outputs[sample_i] is None:
-            print("OUTPUTS IS NONE!")
-            batch_metrics = [None, None, None]
+            print("OUTPUTS IS NONE! SKIP APPENDING TO batch_metrics")
             continue
 
         output = outputs[sample_i]
@@ -342,18 +341,20 @@ def post_processing_v2(prediction, conf_thresh=0.95, nms_thresh=0.4):
         detections = torch.cat((image_pred[:, :7].float(), class_confs.float(), class_preds.float()), dim=1)
         # Perform non-maximum suppression
         keep_boxes = []
+        large_overlap = iou_rotated_single_vs_multi_boxes_cpu(detections[0, :6], detections[:, :6]) > nms_thresh #TODO: replace with gpu version from mmdet3d
+        label_matches = detections[0, -1] == detections[:, -1]
+        invalid = large_overlap & label_matches
+        print(label_matches)
         while detections.size(0):
             # TODO: This step can take quite some time, check if we can avoid that
-            # print(f"nms: {detections.size()}")
+            print(f"nms: {detections.size()}")
             # large_overlap = rotated_bbox_iou(detections[0, :6].unsqueeze(0), detections[:, :6], 1.0, False) > nms_thres # not working
-            large_overlap = iou_rotated_single_vs_multi_boxes_cpu(detections[0, :6], detections[:, :6]) > nms_thresh
-            label_match = detections[0, -1] == detections[:, -1]
             # Indices of boxes with lower confidence scores, large IOUs and matching labels
-            invalid = large_overlap & label_match
             weights = detections[invalid, 6:7]
             # Merge overlapping bboxes by order of confidence
             detections[0, :6] = (weights * detections[invalid, :6]).sum(0) / weights.sum()
             keep_boxes += [detections[0]]
+            
             detections = detections[~invalid]
         if len(keep_boxes) > 0:
             output[image_i] = torch.stack(keep_boxes)

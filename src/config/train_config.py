@@ -93,7 +93,7 @@ def parse_train_configs():
                         help='weight decay (default: 5e-4)')
     parser.add_argument('--optimizer_type', type=str, default='adam', metavar='OPTIMIZER',
                         help='the type of optimizer, it can be sgd or adam')
-    parser.add_argument('--burn_in', type=int, default=50, metavar='N',
+    parser.add_argument('--burn_in', type=int, default=1, metavar='N',
                         help='number of burn in step')
     parser.add_argument('--steps', nargs='*', default=[1500, 4000],
                         help='number of burn in step')
