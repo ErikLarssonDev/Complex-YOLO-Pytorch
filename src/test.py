@@ -20,7 +20,7 @@ import numpy as np
 
 sys.path.append('../')
 
-import config.kitti_config as cnf
+import config.config as cnf
 from data_process import kitti_data_utils, kitti_bev_utils
 from data_process.kitti_dataloader import create_test_dataloader
 from models.model_utils import create_model

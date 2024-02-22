@@ -12,7 +12,7 @@ import numpy as np
 
 sys.path.append('../')
 
-import config.ZOD_config as cnf # TODO: Import configuration file globally, should mot have to change in every file
+import config.config as cnf # TODO: Import configuration file globally, should mot have to change in every file
 
 
 def removePoints(PointCloud, BoundaryCond):

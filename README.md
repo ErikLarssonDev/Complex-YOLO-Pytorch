@@ -81,8 +81,8 @@ cd src/data_process
 show the images in a bigger/smaller window)**_:
 
 ```shell script
-python3 kitti_dataloader.py --output-width 608 # Semms to work quite well
-python3 ZOD_dataloader.py --output-width 608
+python3 kitti_dataloader.py --output-width 608 # Semms to work well, make sure the kitti config is used (search for cnf)
+python3 ZOD_dataloader.py --output-width 608 # Seems to work well, make sure the zod config is used (search for cnf)
 ```
 
 - To visualize mosaics that are composed from 4 BEV maps (Using during training only), let's execute:

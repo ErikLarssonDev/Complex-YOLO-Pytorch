@@ -104,7 +104,7 @@ class KittiDataset(Dataset):
         b = kitti_bev_utils.removePoints(lidarData, cnf.boundary)
         rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION_X, cnf.DISCRETIZATION_Y, cnf.boundary)
         target = kitti_bev_utils.build_yolo_target(labels)
-        
+        print(target.shape)
         # on image space: targets are formatted as (box_idx, class, x, y, w, l, im, re)
         n_target = len(target)
         targets = torch.zeros((n_target, 8))
