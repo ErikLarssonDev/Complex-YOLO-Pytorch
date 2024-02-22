@@ -8,7 +8,7 @@ RUN apt-get update --fix-missing && \
                        python3-pip \
                        ninja-build
 
-RUN pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip install --no-cache-dir torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install Open3D system dependencies https://www.open3d.org/docs/release/docker.html
 RUN apt-get update && apt-get install --no-install-recommends -y \

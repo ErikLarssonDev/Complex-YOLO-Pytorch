@@ -1,4 +1,5 @@
 from __future__ import division
+import math
 import sys
 import tqdm
 
@@ -9,6 +10,7 @@ from shapely.geometry import Polygon
 sys.path.append('../')
 
 import data_process.kitti_bev_utils as bev_utils
+from .rotate_iou import rotate_iou_gpu_eval
 
 
 def cvt_box_2_polygon(box):
@@ -147,7 +149,6 @@ def compute_ap(recall, precision):
     # and sum (\Delta recall) * prec
     ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
-
 
 def get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold):
     """ Compute true positives, predicted scores and predicted labels per sample """
@@ -318,6 +319,9 @@ def post_processing(outputs, conf_thresh=0.95, nms_thresh=0.4):
             bboxes_batch[i] = np.concatenate((l_box_array, l_obj_confs, l_max_conf, l_max_id), axis=-1)
     return bboxes_batch
 
+def bev_box_overlap(boxes, qboxes, criterion=-1):
+    riou = rotate_iou_gpu_eval(boxes, qboxes, criterion)
+    return riou
 
 def post_processing_v2(prediction, conf_thresh=0.95, nms_thresh=0.4):
     """
@@ -339,23 +343,38 @@ def post_processing_v2(prediction, conf_thresh=0.95, nms_thresh=0.4):
         image_pred = image_pred[(-score).argsort()]
         class_confs, class_preds = image_pred[:, 7:].max(dim=1, keepdim=True)
         detections = torch.cat((image_pred[:, :7].float(), class_confs.float(), class_preds.float()), dim=1)
-        # Perform non-maximum suppression
         keep_boxes = []
-        large_overlap = iou_rotated_single_vs_multi_boxes_cpu(detections[0, :6], detections[:, :6]) > nms_thresh #TODO: replace with gpu version from mmdet3d
-        label_matches = detections[0, -1] == detections[:, -1]
-        invalid = large_overlap & label_matches
-        print(label_matches)
-        while detections.size(0):
-            # TODO: This step can take quite some time, check if we can avoid that
-            print(f"nms: {detections.size()}")
-            # large_overlap = rotated_bbox_iou(detections[0, :6].unsqueeze(0), detections[:, :6], 1.0, False) > nms_thres # not working
-            # Indices of boxes with lower confidence scores, large IOUs and matching labels
-            weights = detections[invalid, 6:7]
-            # Merge overlapping bboxes by order of confidence
-            detections[0, :6] = (weights * detections[invalid, :6]).sum(0) / weights.sum()
-            keep_boxes += [detections[0]]
+
+        # Perform non-maximum suppression
+        #keep_boxes = []
+        # print(f"detections: {detections[:2, :5].numpy()}")
+        # # Get yaw angle
+        # detections[:, 4] = torch.atan2(detections[:, 4], detections[:, 5])
+        # detections[:, 4] = 0
+        # detections_2 = detections.clone()
+        # overlap_part = bev_box_overlap(detections[:, :5].cpu().numpy(), detections_2[:, :5].cpu().numpy(), criterion=-1).astype(np.float64)
+        # print(overlap_part.diagonal().mean())
+        # # overlap_part = rotate_iou_gpu_eval(np.array([[6.0000977e+02, 8.1578074e+00,  2.0428976e+01,  5.0748917e+01, 0]]),
+        # #                                np.array([[6.0000977e+02, 8.1578074e+00,  2.0428976e+01,  5.0748917e+01, 0]])).astype(np.float64)
+        # print(f"overlap_part: {overlap_part}")
+        # while detections.size(0):
+        for detection in detections:
+        #     # TODO: This step can take quite some time, check if we can avoid that
+        #     large_overlap = overlap_part[0]
+        #     # large_overlap = iou_rotated_single_vs_multi_boxes_cpu(detections[0, :6], detections[:, :6]) > nms_thresh #TODO: replace with gpu version from mmdet3d
+        #     print(f"large_overlap: {large_overlap}")
+        #     label_matches = detections[0, -1] == detections[:, -1]
+        #     invalid = large_overlap & label_matches
+
+        #     print(f"nms: {detections.size()}")
+        #     # large_overlap = rotated_bbox_iou(detections[0, :6].unsqueeze(0), detections[:, :6], 1.0, False) > nms_thres # not working
+        #     # Indices of boxes with lower confidence scores, large IOUs and matching labels
+        #     weights = detections[invalid, 6:7]
+        #     # Merge overlapping bboxes by order of confidence
+        #     detections[0, :6] = (weights * detections[invalid, :6]).sum(0) / weights.sum()
+              keep_boxes += [detection]
             
-            detections = detections[~invalid]
+        #     detections = detections[~invalid]
         if len(keep_boxes) > 0:
             output[image_i] = torch.stack(keep_boxes)
 

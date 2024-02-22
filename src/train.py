@@ -150,6 +150,7 @@ def main_worker(gpu_idx, configs):
         if not configs.no_val and ((epoch % 10) == 1) and epoch >= configs.burn_in:
             print('number of batches in train: {}'.format(len(train_dataloader)))
             precision, recall, AP, f1, ap_class = evaluate_mAP(train_dataloader, model, configs, logger)
+            # print(f"precision: {precision}, recall: {recall}, AP: {AP}, f1: {f1}, ap_class: {ap_class}")
             train_metrics_dict = {
                 'precision': precision.mean(),
                 'recall': recall.mean(),

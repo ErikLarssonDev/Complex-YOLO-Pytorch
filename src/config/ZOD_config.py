@@ -19,9 +19,9 @@ CLASS_NAME_TO_ID = {
 
 # Front side (of vehicle) Point Cloud boundary for BEV
 boundary = {
-    "minX": -250,
-    "maxX": 250,
-    "minY": -250,
+    "minX": -125,
+    "maxX": 125,
+    "minY": 0,
     "maxY": 250,
     "minZ": -2.73,
     "maxZ": 1.27
