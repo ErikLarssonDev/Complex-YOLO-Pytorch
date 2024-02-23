@@ -16,6 +16,9 @@ import torch
 from torch.optim.lr_scheduler import LambdaLR
 import torch.distributed as dist
 import matplotlib.pyplot as plt
+import sys
+sys.path.append('../')
+from config.train_config import parse_train_configs
 
 
 def create_optimizer(configs, model):
@@ -97,11 +100,11 @@ def save_checkpoint(checkpoints_dir, saved_fn, model_state_dict, utils_state_dic
     """Save checkpoint every epoch only is best model or after every checkpoint_freq epoch"""
     model_save_path = os.path.join(checkpoints_dir, 'Model_{}_epoch_{}.pth'.format(saved_fn, epoch))
     utils_save_path = os.path.join(checkpoints_dir, 'Utils_{}_epoch_{}.pth'.format(saved_fn, epoch))
-
+    configs = parse_train_configs()
     # Delete the saved checkpoint files, otherwise they will accumulate and fill up the storage
     if epoch > 1:
-        model_delete_path = os.path.join(checkpoints_dir, 'Model_{}_epoch_{}.pth'.format(saved_fn, epoch-1)) # Only saving the last epoch for now
-        utils_delete_path = os.path.join(checkpoints_dir, 'Utils_{}_epoch_{}.pth'.format(saved_fn, epoch-1)) # Only saving the last epoch for now
+        model_delete_path = os.path.join(checkpoints_dir, 'Model_{}_epoch_{}.pth'.format(saved_fn, epoch-configs.checkpoint_freq)) # Only saving the last epoch for now
+        utils_delete_path = os.path.join(checkpoints_dir, 'Utils_{}_epoch_{}.pth'.format(saved_fn, epoch-configs.checkpoint_freq)) # Only saving the last epoch for now
         if os.path.exists(model_delete_path):
             os.remove(model_delete_path)
         if os.path.exists(utils_delete_path):

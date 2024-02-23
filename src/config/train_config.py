@@ -149,7 +149,7 @@ def parse_train_configs():
     ####################################################################
     ############## Dataset, logs, Checkpoints dir ######################
     ####################################################################
-    configs.dataset_dir = os.path.join(configs.working_dir, 'KITTI') # TODO: change to minzod_mmdet3d
+    configs.dataset_dir = os.path.join(configs.working_dir, 'minzod_mmdet3d') # TODO: change to minzod_mmdet3d
     configs.checkpoints_dir = os.path.join(configs.working_dir, 'checkpoints', configs.saved_fn)
     configs.logs_dir = os.path.join(configs.working_dir, 'logs', configs.saved_fn)
 
