@@ -16,15 +16,16 @@ import torch.utils.data.distributed
 from tqdm import tqdm
 
 sys.path.append('./')
-
 from data_process.ZOD_dataloader import create_train_dataloader, create_val_dataloader
 from models.model_utils import create_model, make_data_parallel, get_num_parameters
+from models.complexYOLO import ComplexYOLO
 from utils.train_utils import create_optimizer, create_lr_scheduler, get_saved_state, save_checkpoint
 from utils.train_utils import reduce_tensor, to_python_float, get_tensorboard_log
 from utils.misc import AverageMeter, ProgressMeter
 from utils.logger import Logger
 from config.train_config import parse_train_configs
 from evaluate import evaluate_mAP
+from utils.region_loss import RegionLoss
 
 
 def main():
@@ -84,7 +85,8 @@ def main_worker(gpu_idx, configs):
         tb_writer = None
 
     # model
-    model = create_model(configs)
+    # model = create_model(configs)
+    model = ComplexYOLO()
 
     # load weight from a checkpoint
     if configs.pretrained_path is not None:
@@ -203,9 +205,11 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
                              prefix="Train - Epoch: [{}/{}]".format(epoch, configs.num_epochs))
 
     num_iters_per_epoch = len(train_dataloader)
+    # define loss function
+    region_loss = RegionLoss(num_classes=8, num_anchors=5)
 
     # switch to train mode
-    model.eval()
+    model.train()
     start_time = time.time()
     for batch_idx, batch_data in enumerate(train_dataloader): # enumerate(tqdm(train_dataloader)): # Removed tqdm when running on minizod
         data_time.update(time.time() - start_time)
@@ -218,8 +222,12 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
         imgs = imgs.to(configs.device, non_blocking=True)
         inference_time = time.time()
         # TODO: Sometimes total_loss in nan for KITTI dataset, check why?
-        total_loss, outputs = model(imgs, targets)  # :param targets: [num boxes, 8] (box_idx, class, x, y, w, l, sin(yaw), cos(yaw))
+        outputs = model(imgs)  # :param targets: [num boxes, 8] (box_idx, class, x, y, w, l, sin(yaw), cos(yaw))
+        print(f"outputs: {outputs.shape}")
+        print(f"targets: {targets.unsqueeze(0).shape}")
+        total_loss = region_loss(outputs, targets.unsqueeze(0))
         print(f"inference_time: {time.time() - inference_time}")
+        print(total_loss)
         return
         # For torch.nn.DataParallel case
         if (not configs.distributed) and (configs.gpu_idx is None):

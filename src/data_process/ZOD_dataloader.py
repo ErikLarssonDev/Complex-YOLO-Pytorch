@@ -1,4 +1,5 @@
 import sys
+import time
 
 import torch
 from torch.utils.data import DataLoader
@@ -151,6 +152,7 @@ if __name__ == '__main__':
     for batch_i, (_, imgs, targets) in enumerate(dataloader):
         # Rescale target
         # We go from coord x, y in [-250, 250] and center is (0,0) --> x, y in [0, 608] and center is (304, 304), TODO: Don't we need to do something more?
+        
         targets[:, 2:6] *= configs.img_size
 
         # Get yaw angle
@@ -159,6 +161,7 @@ if __name__ == '__main__':
         img_bev = imgs.squeeze() * 255
         img_bev = img_bev.permute(1, 2, 0).numpy().astype(np.uint8)
         img_bev = cv2.resize(img_bev, (configs.img_size, configs.img_size)) # TODO: Whe should resize but keep the aspect ratio
+        
         for c, x, y, w, l, yaw in targets[:, 1:7].numpy(): # targets = [cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))]
             # Draw rotated box
             bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(c)])

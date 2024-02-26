@@ -91,8 +91,8 @@ class ZOD(Dataset):
         # labels, noObjectLabels = kitti_bev_utils.read_labels_for_bevbox(objects)
 
         # TODO: Check what needs to be done for transforms need to be applied
-        if self.lidar_transforms is not None:
-            lidarData, labels[:, :7] = self.lidar_transforms(lidarData, labels[:, :7])  # Expects: x, y, z, h, w, l, r
+        # if self.lidar_transforms is not None:
+        #     lidarData, labels[:, :7] = self.lidar_transforms(lidarData, labels[:, :7])  # Expects: x, y, z, h, w, l, r
         b = lidarData
         b = kitti_bev_utils.removePoints(lidarData, cnf.boundary)
         rgb_map = kitti_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION_X, cnf.DISCRETIZATION_Y, cnf.boundary)
@@ -106,8 +106,8 @@ class ZOD(Dataset):
 
         rgb_map = torch.from_numpy(rgb_map).float()
 
-        if self.aug_transforms is not None:
-            rgb_map, targets = self.aug_transforms(rgb_map, targets) # Expects: x, y, z, h, w, l, r
+        # if self.aug_transforms is not None:
+        #     rgb_map, targets = self.aug_transforms(rgb_map, targets) # Expects: x, y, z, h, w, l, r
 
         return None, rgb_map, targets
 

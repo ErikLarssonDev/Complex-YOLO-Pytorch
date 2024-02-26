@@ -22,7 +22,7 @@ sys.path.append('../')
 
 import config.config as cnf
 from data_process import kitti_data_utils, kitti_bev_utils
-from data_process.kitti_dataloader import create_test_dataloader
+from data_process.ZOD_dataloader import create_test_dataloader, create_val_dataloader, create_train_dataloader
 from models.model_utils import create_model
 from utils.misc import make_folder
 from utils.evaluation_utils import post_processing, rescale_boxes, post_processing_v2
@@ -70,6 +70,34 @@ def parse_test_configs():
                         help='the type of the test output (support image or video)')
     parser.add_argument('--output_video_fn', type=str, default='out_complexer_yolov4', metavar='PATH',
                         help='the video filename if the output format is video')
+    
+    ####################################################################
+    ##############     Dataloader and Running configs            #######
+    ####################################################################
+    parser.add_argument('--hflip_prob', type=float, default=0.5,
+                        help='The probability of horizontal flip')
+    parser.add_argument('--cutout_prob', type=float, default=0.,
+                        help='The probability of cutout augmentation')
+    parser.add_argument('--cutout_nholes', type=int, default=1,
+                        help='The number of cutout area')
+    parser.add_argument('--cutout_ratio', type=float, default=0.3,
+                        help='The max ratio of the cutout area')
+    parser.add_argument('--cutout_fill_value', type=float, default=0.,
+                        help='The fill value in the cut out area, default 0. (black)')
+    parser.add_argument('--multiscale_training', action='store_true',
+                        help='If true, use scaling data for training')
+    parser.add_argument('--mosaic', action='store_true',
+                        help='If true, compose training samples as mosaics')
+    parser.add_argument('--random-padding', action='store_true',
+                        help='If true, random padding if using mosaic augmentation')
+    parser.add_argument('--no-val', action='store_true',
+                        help='If true, dont evaluate the model on the val set')
+    parser.add_argument('--print_freq', type=int, default=50, metavar='N',
+                        help='print frequency (default: 50)')
+    parser.add_argument('--tensorboard_freq', type=int, default=50, metavar='N',
+                        help='frequency of saving tensorboard (default: 50)')
+    parser.add_argument('--checkpoint_freq', type=int, default=5, metavar='N',
+                        help='frequency of saving checkpoints (default: 5)')
 
     configs = edict(vars(parser.parse_args()))
     configs.pin_memory = True
@@ -78,7 +106,7 @@ def parse_test_configs():
     ##############Dataset, Checkpoints, and results dir configs#########
     ####################################################################
     configs.working_dir = '../'
-    configs.dataset_dir = os.path.join(configs.working_dir, 'KITTI')
+    configs.dataset_dir = os.path.join(configs.working_dir, 'minzod_mmdet3d')
 
     if configs.save_test_output:
         configs.results_dir = os.path.join(configs.working_dir, 'results', configs.saved_fn)
@@ -107,7 +135,7 @@ if __name__ == '__main__':
 
     model.eval()
 
-    test_dataloader = create_test_dataloader(configs)
+    test_dataloader = create_train_dataloader(configs)
     with torch.no_grad():
         for batch_idx, (_, imgs_bev, targets) in enumerate(test_dataloader):
             input_imgs = imgs_bev.to(device=configs.device).float()
@@ -131,16 +159,20 @@ if __name__ == '__main__':
                     yaw = np.arctan2(im, re)
                     # Draw rotated box
                     kitti_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
+                    
+            # for c, x, y, w, l, yaw in targets[:, 1:7].numpy(): # targets = [cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))]
+            #     # Draw rotated box
+            #     kitti_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(c)])
 
-            img_rgb = cv2.imread(img_paths[0])
-            calib = kitti_data_utils.Calibration(img_paths[0].replace(".png", ".txt").replace("image_2", "calib"))
-            objects_pred = predictions_to_kitti_format(img_detections, calib, img_rgb.shape, configs.img_size)
-            img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False)
+            # img_rgb = cv2.imread(img_paths[0])
+            # calib = kitti_data_utils.Calibration(img_paths[0].replace(".png", ".txt").replace("image_2", "calib"))
+            # objects_pred = predictions_to_kitti_format(img_detections, calib, img_rgb.shape, configs.img_size)
+            # img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False)
 
-            img_bev = cv2.flip(cv2.flip(img_bev, 0), 1)
+            # img_bev = cv2.flip(cv2.flip(img_bev, 0), 1)
 
-            out_img = merge_rgb_to_bev(img_rgb, img_bev, output_width=608)
-
+            # out_img = merge_rgb_to_bev(img_rgb, img_bev, output_width=608)
+            out_img = img_bev
             print('\tDone testing the {}th sample, time: {:.1f}ms, speed {:.2f}FPS'.format(batch_idx, (t2 - t1) * 1000,
                                                                                            1 / (t2 - t1)))
 

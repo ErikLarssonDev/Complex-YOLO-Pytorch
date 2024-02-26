@@ -109,7 +109,7 @@ Download the trained model from [**_here_**](https://drive.google.com/drive/fold
 then put it to `${ROOT}/checkpoints/` and execute:
 
 ```shell script
-python3 test.py --gpu_idx 0 --pretrained_path ../checkpoints/complexer_yolo/Model_complexer_yolo_epoch_770.pth --cfgfile ./config/cfg/complex_yolov4.cfg --show_image
+python3 test.py --gpu_idx 0 --pretrained_path ../checkpoints/Model_complexer_yolo_zod_10000e_no_postprocess_1_epoch_5025.pth --cfgfile ./config/cfg/complex_yolov4.cfg --show_image
 ```
 
 #### 2.4.3. Evaluation
